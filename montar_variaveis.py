@@ -1,26 +1,11 @@
-"""
-Monta as variáveis do modelo (Curva de Phillips aumentada, LeBlanc e Chinn, 2004)
-a partir da base congelada do TCC.
-
-Como rodar:
-    1. Deixe este arquivo na mesma pasta de base_modelo_final.xlsx
-    2. No terminal, dentro dessa pasta:  python montar_variaveis.py
-       (ou copie o código para uma célula do Jupyter/Colab e rode)
-
-O que ele gera, na mesma pasta:
-    - variaveis_modelo.xlsx         -> todas as variáveis, prontas para a regressão
-    - figura_choques_petroleo.png   -> as 3 medidas de choque do petróleo (como a Figura 4 do artigo)
-
-Precisa de: pandas, numpy, matplotlib e openpyxl.
-"""
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 ARQUIVO_BASE = "base_modelo_final.xlsx"
-DEFASAGENS = 4                      # 4 trimestres = 1 ano, como no artigo
-INICIO_AMOSTRA = "2003-04-01"       # 2003T2: primeiro trimestre com as 4 defasagens do desemprego
+DEFASAGENS = 4                      
+INICIO_AMOSTRA = "2003-04-01"      
 
 
 # ---------------------------------------------------------------------------
@@ -36,14 +21,13 @@ v["rotulo"] = base["rotulo"]
 
 
 # ---------------------------------------------------------------------------
-# PASSO 2 — Variáveis da Curva de Phillips (equação 1 do TCC)
+# PASSO 2 — Variáveis da Curva de Phillips
 # ---------------------------------------------------------------------------
-v["inflacao"] = base["ipca_pct"]            # π: IPCA, % no trimestre
-v["desemprego"] = base["desemprego_pct"]    # U: taxa de desemprego, %
-v["selic"] = base["selic_pct"]              # i: Selic, % ao ano (em nível)
+v["inflacao"] = base["ipca_pct"]           
+v["desemprego"] = base["desemprego_pct"]    
+v["selic"] = base["selic_pct"]             
 
-# Alternativa para os juros: LeBlanc e Chinn usam a VARIAÇÃO (log) da taxa de juros.
-# Fica pronta aqui para testar depois; o modelo principal decide qual usar.
+
 v["selic_var"] = 100 * np.log(base["selic_pct"] / base["selic_pct"].shift(1))
 
 
@@ -52,15 +36,12 @@ v["selic_var"] = 100 * np.log(base["selic_pct"] / base["selic_pct"].shift(1))
 # ---------------------------------------------------------------------------
 preco = base["brent_brl"]
 
-# Modelo 1 — Benchmark (equação 2): variação % do preço em relação ao trimestre anterior
 v["oleo_bench"] = 100 * (preco / preco.shift(1) - 1)
 
-# Modelo 2 — Net price de Hamilton (equação 3):
-# compara o preço de hoje com o MAIOR preço dos 4 trimestres anteriores.
-# Se superou, guarda quanto superou (em %); se não superou, vale zero.
+
 maximo_4_trim = preco.shift(1).rolling(4).max()
 v["oleo_hamilton"] = 100 * np.maximum(0, preco / maximo_4_trim - 1)
-v.loc[maximo_4_trim.isna(), "oleo_hamilton"] = np.nan   # sem 4 trimestres de histórico, não dá para calcular
+v.loc[maximo_4_trim.isna(), "oleo_hamilton"] = np.nan   
 
 # Modelo 3 — Assimétrico (equações 4 e 5): separa altas e quedas em duas colunas
 v["oleo_alta"] = v["oleo_bench"].clip(lower=0)     # só as altas; quedas viram 0
@@ -83,19 +64,19 @@ for nome in ["oleo_bench", "oleo_hamilton", "oleo_alta", "oleo_queda"]:
 
 
 # ---------------------------------------------------------------------------
-# PASSO 5 — Variáveis "liga/desliga" (dummies): valem 1 ou 0
+# PASSO 5 — Variáveis "liga/desliga" (dummies)
 # ---------------------------------------------------------------------------
 tri = v["trimestre"].dt.quarter
-v["d_t2"] = (tri == 2).astype(int)      # sazonalidade: o 1º trimestre fica como referência
+v["d_t2"] = (tri == 2).astype(int)      
 v["d_t3"] = (tri == 3).astype(int)
 v["d_t4"] = (tri == 4).astype(int)
 
 ano = v["trimestre"].dt.year
-v["d_controle"] = ((ano >= 2011) & (ano <= 2016)).astype(int)   # controle de preços da Petrobras
-v["d_ppi"] = (ano >= 2017).astype(int)                          # Política de Paridade de Importação
+v["d_controle"] = ((ano >= 2011) & (ano <= 2016)).astype(int)   
+v["d_ppi"] = (ano >= 2017).astype(int)                          
 
-v["d_2020T2"] = (v["rotulo"] == "2020T2").astype(int)   # pandemia
-v["d_2022T3"] = (v["rotulo"] == "2022T3").astype(int)   # corte de ICMS sobre combustíveis
+v["d_2020T2"] = (v["rotulo"] == "2020T2").astype(int)   
+v["d_2022T3"] = (v["rotulo"] == "2022T3").astype(int)   
 
 
 # ---------------------------------------------------------------------------

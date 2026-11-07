@@ -57,7 +57,7 @@ modelos = {nome: estimar(amostra, BASE + oleo) for nome, oleo in OLEO.items()}
 
 
 # ---------------------------------------------------------------------------
-# PASSO 3 — Tabela no formato da Tabela 1 do artigo 
+# PASSO 3 — Tabela no formato da Tabela
 # ---------------------------------------------------------------------------
 def rotulo(col):
     nomes = {"const": "Constante", "d_t2": "Dummy 2º trimestre", "d_t3": "Dummy 3º trimestre", "d_t4": "Dummy 4º trimestre"}
@@ -143,7 +143,7 @@ p_assimetria = float(np.squeeze(teste_assim.pvalue))
 
 
 # ---------------------------------------------------------------------------
-# PASSO 5 — Testes de diagnóstico (como no artigo): LM(2), Jarque-Bera, White e CUSUM
+# PASSO 5 — Testes de diagnóstico: LM(2), Jarque-Bera, White e CUSUM
 # ---------------------------------------------------------------------------
 def white_sem_termos_cruzados(res):
     """Teste de White sem termos cruzados: n × R² da regressão dos resíduos² nas variáveis do modelo e nos
